@@ -13,6 +13,7 @@ Each of these is a check on the built result, not an intention. Run them togethe
 - **Motion:** one authored moment, not scattered effects and not one identical entrance on every section. Exponential ease-out from an already-visible default. Reach past transform and opacity: blur, backdrop-filter, clip-path, mask, and shadow belong to the palette when they stay smooth.
 - **States:** hover, disabled, loading, error, empty. Plus real content, working controls, responsive composition, keyboard focus.
 - **Browser surfaces:** the parts you did not draw still carry the design. Text selection, the caret, custom scrollbars, focus rings, underline offset, and the numerals in tabular data all ship with browser defaults that belong to no design system. Theme them from the palette. This is the cheapest signal that a page was built rather than assembled, and the one models skip most reliably.
+- **Native surfaces:** the platform and form-factor references carry the equivalent floors. Dynamic Type / sp and font scale, safe areas and window insets, focus visibility, touch targets, system components, dark theme, and always-on or focus-engine behavior where the device class demands it. The browser-surface mechanics above do not apply there, and web values (px, rem, ch) never substitute for pt, dp, and sp.
 - **Copy:** the product's own language. Controls name their action; errors name the problem and the recovery.
 - **Coverage:** every brief requirement present and findable within seconds.
 

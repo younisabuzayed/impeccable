@@ -90,6 +90,7 @@ Search the codebase in priority order:
 5. **Component library**: scan the main button, card, input, navigation, dialog components. Note their variant APIs and default styles.
 6. **Global stylesheet**: the root CSS file usually has the base typography and color assignments.
 7. **Visible rendered output**: if browser automation tools are available, load the live site and sample computed styles from key elements (body, h1, a, button, .card). This catches values that tokens miss.
+8. **Native sources** (when PRODUCT.md's platform is `ios`, `android`, or `adaptive`): Asset catalogs (color sets, named colors) and code-level semantic colors on the Apple side; `Theme.kt` / `Color.kt` / `Type.kt` for Jetpack Compose; `colors.xml`, `themes.xml`, and styles for Android Views; watch and TV theme modules for those targets. Map platform roles onto the Stitch roles (iOS `label` / `systemBackground` to text and background; Material color roles to their named counterparts) and record sizes in pt / dp / sp, never px or rem.
 
 ### Step 2: Auto-extract what can be auto-extracted
 
