@@ -20,7 +20,7 @@ Before asking, scan enough to avoid making the user repeat known facts: product 
 
 Treat repository evidence as a hypothesis, not user approval. Note visual maturity without documenting, extending, or replacing the world.
 
-Form a platform hypothesis: `web`, `ios`, `android`, or `adaptive` (one product that genuinely adapts its design language per OS). Mobile web remains `web`; a native wrapper around a website does not make its design language native.
+Form a platform hypothesis: `web`, `ios`, `android`, or `adaptive` (one product that genuinely adapts its design language per OS). Mobile web remains `web`; a native wrapper around a website does not make its design language native. On a native or adaptive project, also form a form-factor hypothesis from the code and deployment: which of `phone`, `tablet`, `watch`, `tv` the product actually ships to (a watchOS target, a TV module, a tablet layout, or several of these).
 
 ## Step 3: Interview for product truth
 
@@ -36,7 +36,7 @@ Start with the unknowns that most change future product decisions:
 2. What does the product make possible, and what is its meaningfully different mechanism or position?
 3. What durable constraints, assets, evidence, or product facts must future work preserve?
 
-Confirm ambiguous platform separately. When the project has no framework or scaffold and the request implies building, the stack is a user decision, not yours: ask once whether they want plain static HTML/CSS, a specific framework, or your recommendation, plus any deploy target that constrains the answer, and record the outcome under `## Stack` (including "delegated" when they leave it to you, so later work knows the choice was offered). Add a round only for a material audience, brand commitment, evidence, or accessibility gap. Record undecided facts instead of inventing them.
+Confirm ambiguous platform separately; on native, confirm ambiguous form factors in the same round. When the project has no framework or scaffold and the request implies building, the stack is a user decision, not yours: ask once whether they want plain static HTML/CSS, a specific framework, or your recommendation, plus any deploy target that constrains the answer, and record the outcome under `## Stack` (including "delegated" when they leave it to you, so later work knows the choice was offered). On a native project, name the framework in that answer when it is one of SwiftUI, UIKit, Jetpack Compose, or Android Views, so the matching framework reference gets loaded later. Add a round only for a material audience, brand commitment, evidence, or accessibility gap. Record undecided facts instead of inventing them.
 
 Do not ask for an aesthetic direction, emotional feel, visual references, colors, typography, or style during init. If the user volunteers a binding visual constraint, record it without expanding it.
 
@@ -65,6 +65,9 @@ Write only confirmed facts and explicitly marked open decisions. Omit irrelevant
 ## Platform
 
 web
+
+## Form factors
+[Native and adaptive products only: the device classes the product ships to, as bare comma-separated values (`phone`, `tablet`, `watch`, `tv`; for example `phone, tablet` or `watch`). Omit the section for web; a native product defaults to `phone, tablet` when the section is absent.]
 
 ## Stack
 [Greenfield only: the user's answer to the stack question, e.g. "static HTML/CSS", "Astro", or "delegated: <what you chose and why>". Omit the section when an existing codebase already answers it.]
@@ -97,11 +100,11 @@ web
 [Known user needs or required standard. Omit when no product-specific requirement was established.]
 ```
 
-Platform is the bare value `web`, `ios`, `android`, or `adaptive`. Preserve useful legacy headings. New files go at `PROJECT_ROOT/PRODUCT.md`; otherwise update the resolved file. Write it before any visual-world or surface-concept work.
+Platform is the bare value `web`, `ios`, `android`, or `adaptive`; on native and adaptive products, Form factors is a bare comma-separated list of `phone`, `tablet`, `watch`, `tv`. Preserve useful legacy headings. New files go at `PROJECT_ROOT/PRODUCT.md`; otherwise update the resolved file. Write it before any visual-world or surface-concept work.
 
 Copy the `impeccable:product-schema` comment verbatim, including when you update an older file. It records which version of the product record this file follows, so later versions can tell a deliberately short record from one written before a section existed, and never propose an interview the user has already sat through. Update the number only when this reference's template changes it. Sections a later version retires are reported to you at boot as deprecated; delete them when the user agrees rather than carrying them forward.
 
-When the platform you just recorded is `ios`, `android`, or `adaptive`, load [ios.md](ios.md), [android.md](android.md), or both before any design work. On a project that had no PRODUCT.md, `impeccable context` could not know the platform and so never loaded them; init is the only place that learns the answer.
+When the platform you just recorded is `ios`, `android`, or `adaptive`, load [ios.md](ios.md), [android.md](android.md), or both before any design work. On a project that had no PRODUCT.md, `impeccable context` could not know the platform and so never loaded them; init is the only place that learns the answer. The same holds for the rest of the form-factor stack: with `tablet`, `watch`, or `tv` recorded under Form factors, also load [form-factors.md](form-factors.md) plus [watch.md](watch.md) / [tv.md](tv.md) for those classes; and when `## Stack` names SwiftUI, UIKit, Jetpack Compose, or Android Views, load its framework reference ([swiftui.md](swiftui.md), [uikit.md](uikit.md), [compose.md](compose.md), [android-views.md](android-views.md)) before implementation work.
 
 ### Completion gate
 

@@ -1,6 +1,6 @@
 Run systematic **technical** quality checks on a native app (`ios` / `android` / `adaptive`) and generate a comprehensive report. Don't fix issues; document them for other commands to address.
 
-This is a code-level audit, not a design critique. Audit from source (SwiftUI / UIKit / Compose / React Native / Flutter); no browser tooling or `impeccable detect` applies. Score against the platform reference(s): [ios.md](ios.md) / [android.md](android.md), both for `adaptive`. Read them before scoring if Setup hasn't already. The report skeleton mirrors [audit.md](audit.md); keep the two in sync when changing it.
+This is a code-level audit, not a design critique. Audit from source (SwiftUI / UIKit / Compose / React Native / Flutter); no browser tooling or `impeccable detect` applies. Score against the platform reference(s): [ios.md](ios.md) / [android.md](android.md), both for `adaptive`, plus the form-factor stack PRODUCT.md declares: [form-factors.md](form-factors.md) and [watch.md](watch.md) / [tv.md](tv.md) where `watch` or `tv` is a shipped class, and the framework reference ([swiftui.md](swiftui.md) / [uikit.md](uikit.md) / [compose.md](compose.md) / [android-views.md](android-views.md)) when the Stack names one. Read them before scoring if Setup hasn't already. The report skeleton mirrors [audit.md](audit.md); keep the two in sync when changing it.
 
 ## Diagnostic Scan
 
@@ -54,14 +54,16 @@ Score against the loaded platform reference(s), including their slop tests. **Ch
 
 ### 5. Adaptivity
 
-**Check for**:
+**Check for** (scored against every form factor PRODUCT.md declares):
 - **Stretched phone layouts**: tablet/iPad rendering a scaled-up phone UI instead of using size classes / window size classes
 - **Orientation breakage**: landscape clipping, ignored, or locked without reason
 - **Keyboard/IME handling**: inputs hidden behind the keyboard, no inset adjustment
-- **Multitasking**: iPad Split View / Android multi-window breaking layout
+- **Multitasking/windowing**: iPad freeform windows, Stage Manager, and Android multi-window breaking layout
 - **Foldables**: hinge-unaware layouts on posture change (Android)
+- **Watch failures** (when `watch` is declared): phone-screen shrinkage, content clipped on round displays, scroll depending on screen touch instead of crown/bezel, no always-on/ambient restraint
+- **TV failures** (when `tv` is declared): unfocusable elements, dead-end or directional-unstable D-pad traversal, content in the overscan margins, pointer/hover-dependent affordances
 
-**Score 0-4**: 0=One screen size only, 1=Major breakage (landscape or tablet broken), 2=Partial, 3=Good (minor edge cases), 4=Excellent (adapts across sizes, orientations, and windowing)
+**Score 0-4**: 0=One screen size only, 1=Major breakage (landscape, tablet, watch, or TV broken), 2=Partial, 3=Good (minor edge cases), 4=Excellent (adapts across sizes, orientations, windowing, and every declared device class)
 
 ## Generate Report
 

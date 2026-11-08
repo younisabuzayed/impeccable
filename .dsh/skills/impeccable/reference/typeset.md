@@ -6,7 +6,7 @@ Typography carries information, hierarchy, and voice. Improve it inside the esta
 
 - **Persuade + Experience:** display type may carry the voice. Use decisive contrast and responsive scale when the composition benefits.
 - **Operate + Read:** stability, scanability, and measure come first. A single well-tuned family and fixed role scale are often right.
-- **Native:** follow [ios.md](ios.md) or [android.md](android.md), including platform scaling and accessibility behavior.
+- **Native:** follow [ios.md](ios.md) or [android.md](android.md), including platform scaling and accessibility behavior, plus the declared form-factor and framework references ([form-factors.md](form-factors.md), [watch.md](watch.md) / [tv.md](tv.md), and [swiftui.md](swiftui.md) / [uikit.md](uikit.md) / [compose.md](compose.md) / [android-views.md](android-views.md) when the Stack names one).
 
 If typography replacement would create a new identity, route through [new-work.md](new-work.md) and update DESIGN.md. Otherwise preserve confirmed families and improve their use.
 

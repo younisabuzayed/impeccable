@@ -19,7 +19,7 @@ Fix the cause at the narrowest correct level. Ask when a binding system principl
 
 ## 2. Gather the evidence
 
-Use the feature yourself at the surface's representative sizes: desktop and mobile on the web; on a native platform (`ios` / `android` / `adaptive`), the shipped device classes on the simulator, emulator, or hardware, captured per the platform reference's Verifying the build section. Determine:
+Use the feature yourself at the surface's representative sizes: desktop and mobile on the web; on a native platform (`ios` / `android` / `adaptive`), every device class PRODUCT.md's Form factors declares (phone, tablet, watch, tv) on the simulator, emulator, or hardware, captured per the platform reference's and [form-factors.md](form-factors.md)'s verification sections ([watch.md](watch.md) / [tv.md](tv.md) add their own bars). Determine:
 
 - whether the path is functionally complete;
 - the intended quality bar and time available;
@@ -86,7 +86,7 @@ Do not perfect one corner while leaving the rest below the same quality bar.
 
 Walk the complete path again with mouse, keyboard, and touch where applicable. Check:
 
-- mobile, intermediate, and wide layouts on the web; phone and tablet size classes in both supported orientations on native;
+- mobile, intermediate, and wide layouts on the web; every declared native form factor: phone and tablet size classes in both orientations, plus watch sizes and TV focus traversal where `watch` / `tv` are shipped;
 - loading, empty, error, success, disabled, long-content, and missing-content states;
 - zoom, contrast, focus, semantics, and screen-reader names;
 - console errors, layout shift, interaction latency, and image loading everywhere; supported browsers on the web; supported OS versions, runtime warnings, and dropped frames on native;
