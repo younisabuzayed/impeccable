@@ -329,6 +329,10 @@ pub fn gather_signals(cwd: &str, env: &Env) -> Value {
     setup.insert("designPath".into(), opt_string(&ctx.design_path));
     setup.insert("hasCode".into(), Value::Bool(has_code(cwd)));
     setup.insert("platform".into(), opt_string(&extract_platform(ctx.product.as_deref())));
+    setup.insert(
+        "formFactors".into(),
+        Value::Array(ctx.form_factors.iter().map(|f| Value::String(f.clone())).collect()),
+    );
     let mut critique = Map::new();
     critique.insert("latest".into(), latest_critique(cwd, env));
     let dev = dev_server_signals();

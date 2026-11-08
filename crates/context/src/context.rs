@@ -89,6 +89,9 @@ pub struct Ctx {
     pub surface_brief_candidates: Vec<BriefSummary>,
     pub has_visual_implementation: bool,
     pub platform: Option<String>,
+    /// Declared `## Form factors` values, or the platform default when the
+    /// section is absent or carries no valid value.
+    pub form_factors: Vec<String>,
     pub project_root: String,
     pub repo_root: String,
     pub is_monorepo: bool,
@@ -105,6 +108,10 @@ pub fn load_context(cwd: &str, options: &TargetOptions, env: &Env) -> Ctx {
     let product = resolved.product_path.as_deref().and_then(safe_read);
     let design = resolved.design_path.as_deref().and_then(safe_read);
     let platform = extract_platform(product.as_deref());
+    let form_factors = match extract_form_factors(product.as_deref()) {
+        Some(ref v) if !v.is_empty() => v.clone(),
+        _ => default_form_factors(platform.as_deref()),
+    };
     let target = if has_target_option(options) { options.target_path.as_deref() } else { None };
     let sr = resolve_surface_brief(&resolved.project_root, target);
     let brief = sr.brief.clone();
@@ -132,6 +139,7 @@ pub fn load_context(cwd: &str, options: &TargetOptions, env: &Env) -> Ctx {
             .collect(),
         has_visual_implementation: has_visual_implementation(&resolved.project_root),
         platform,
+        form_factors,
         project_root: resolved.project_root,
         repo_root: resolved.repo_root,
         is_monorepo: resolved.is_monorepo,
@@ -1261,6 +1269,40 @@ pub fn extract_platform(product: Option<&str>) -> Option<String> {
     None
 }
 
+/// The form factors a product may declare, in canonical order.
+pub const FORM_FACTORS: [&str; 4] = ["phone", "tablet", "watch", "tv"];
+
+/// The classes a platform ships when PRODUCT.md declares none or none valid:
+/// a native product defaults to handheld plus tablet; web has no native form
+/// factors.
+pub fn default_form_factors(platform: Option<&str>) -> Vec<String> {
+    match platform {
+        Some("ios") | Some("android") | Some("adaptive") => {
+            vec!["phone".to_string(), "tablet".to_string()]
+        }
+        _ => Vec::new(),
+    }
+}
+
+/// JS: extractFormFactors — the declared values from PRODUCT.md's
+/// `## Form factors`, lowercased, deduplicated, in declaration order, with
+/// unrecognized tokens dropped (the caller warns about them). `None` when the
+/// section is absent; `Some(vec![])` when it holds no valid value.
+pub fn extract_form_factors(product: Option<&str>) -> Option<Vec<String>> {
+    let raw = extract_section_value(product, "Form factors")?;
+    let mut out: Vec<String> = Vec::new();
+    for token in raw.split(|c: char| c.is_whitespace() || c == ',' || c == '+' || c == '&' || c == '/') {
+        let token = token.trim().to_lowercase();
+        if token.is_empty() || token == "and" || !FORM_FACTORS.contains(&token.as_str()) {
+            continue;
+        }
+        if !out.contains(&token) {
+            out.push(token);
+        }
+    }
+    Some(out)
+}
+
 // ─── hasVisualImplementation ───────────────────────────────────────────────
 
 static RE_BLOCK_COMMENT: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?s)/\*.*?\*/").unwrap());
@@ -1568,5 +1610,74 @@ mod ui_target_tests {
         let (cands, skipped) = discover_ui_target_candidates(&t.root(), &env());
         assert_eq!(paths(&cands), ["packages/core", "packages/tsconfig"]);
         assert_eq!(skipped, 0);
+    }
+}
+
+#[cfg(test)]
+mod form_factors_tests {
+    use super::*;
+
+    #[test]
+    fn extract_form_factors_reads_declared_values_in_order() {
+        let product = "# Product\n\n## Platform\nios\n\n## Form factors\nphone, watch, tv\n";
+        assert_eq!(extract_form_factors(Some(product)), Some(vec!["phone".into(), "watch".into(), "tv".into()]));
+    }
+
+    #[test]
+    fn extract_form_factors_accepts_prose_separators_and_deduplicates() {
+        let product = "# Product\n\n## Form factors\ntablet and watch, Tablet / tv + tv\n";
+        assert_eq!(extract_form_factors(Some(product)), Some(vec!["tablet".into(), "watch".into(), "tv".into()]));
+    }
+
+    #[test]
+    fn extract_form_factors_drops_unknown_tokens_but_keeps_valid_ones() {
+        let product = "# Product\n\n## Form factors\nphone, fridge, TV\n";
+        assert_eq!(extract_form_factors(Some(product)), Some(vec!["phone".into(), "tv".into()]));
+    }
+
+    #[test]
+    fn extract_form_factors_is_none_when_the_section_is_absent_and_empty_when_only_unknowns() {
+        assert_eq!(extract_form_factors(Some("# Product\n\n## Platform\nios\n")), None);
+        assert_eq!(extract_form_factors(Some("# Product\n\n## Form factors\nfridge\n")), Some(vec![]));
+        assert_eq!(extract_form_factors(None), None);
+    }
+
+    #[test]
+    fn native_platforms_default_to_phone_and_tablet_web_to_none() {
+        for platform in ["ios", "android", "adaptive"] {
+            assert_eq!(
+                default_form_factors(Some(platform)),
+                vec!["phone".to_string(), "tablet".to_string()],
+                "{platform}"
+            );
+        }
+        assert_eq!(default_form_factors(Some("web")), Vec::<String>::new());
+        assert_eq!(default_form_factors(None), Vec::<String>::new());
+    }
+
+    #[test]
+    fn load_context_defaults_when_the_section_is_absent_or_invalid() {
+        let root = std::env::temp_dir().join(format!(
+            "impeccable-form-factors-ctx-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(root.join("package.json"), r#"{"name":"app","private":true}"#).unwrap();
+        let put = |body: &str| std::fs::write(root.join("PRODUCT.md"), body).unwrap();
+        let env = Env::from([
+            ("HOME".to_string(), "/nonexistent-impeccable-home".to_string()),
+            ("USERPROFILE".to_string(), "/nonexistent-impeccable-home".to_string()),
+        ]);
+        put("# Product\n\n## Platform\nios\n");
+        let ctx = load_context(root.to_string_lossy().as_ref(), &TargetOptions::default(), &env);
+        assert_eq!(ctx.form_factors, vec!["phone".to_string(), "tablet".to_string()]);
+        put("# Product\n\n## Platform\nandroid\n\n## Form factors\nwatch\n");
+        let ctx = load_context(root.to_string_lossy().as_ref(), &TargetOptions::default(), &env);
+        assert_eq!(ctx.form_factors, vec!["watch".to_string()]);
+        put("# Product\n\n## Platform\nweb\n");
+        let ctx = load_context(root.to_string_lossy().as_ref(), &TargetOptions::default(), &env);
+        assert!(ctx.form_factors.is_empty());
+        let _ = std::fs::remove_dir_all(&root);
     }
 }

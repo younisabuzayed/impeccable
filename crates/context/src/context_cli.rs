@@ -369,6 +369,10 @@ fn append_resolved_context(parts: &mut Parts, ctx: &Ctx, options: &TargetOptions
     m.insert("surfaceBriefCandidates".into(), serde_json::to_value(&ctx.surface_brief_candidates).unwrap());
     m.insert("hasVisualImplementation".into(), Value::Bool(ctx.has_visual_implementation));
     m.insert("platform".into(), opt_string(&ctx.platform));
+    m.insert(
+        "formFactors".into(),
+        Value::Array(ctx.form_factors.iter().map(|f| Value::String(f.clone())).collect()),
+    );
     let full = format!("RESOLVED_CONTEXT:\n{}", json_pretty(&Value::Object(m.clone())));
     if ctx.surface_brief_candidates.is_empty() {
         parts.push(full);
@@ -695,6 +699,44 @@ fn load_native_platform_references(platform: Option<&str>, provider: &Provider) 
         .collect()
 }
 
+/// Form-factor references load when the declared classes go beyond the
+/// handheld phone baseline: the shared size model whenever tablet ships (or a
+/// second class joins the list), and the device reference for watch and tv.
+/// Absent files are silently skipped so a stale skill copy degrades to the
+/// platform references alone.
+fn load_form_factor_references(
+    platform: Option<&str>,
+    form_factors: &[String],
+    provider: &Provider,
+) -> Vec<(String, String, String)> {
+    if !is_native(platform) {
+        return Vec::new();
+    }
+    let has = |f: &str| form_factors.iter().any(|x| x == f);
+    let mut names: Vec<&str> = Vec::new();
+    if has("tablet") || form_factors.len() >= 2 {
+        names.push("form-factors");
+    }
+    if has("watch") {
+        names.push("watch");
+    }
+    if has("tv") {
+        names.push("tv");
+    }
+    names
+        .into_iter()
+        .filter_map(|n| {
+            let p = provider.reference_path(n)?;
+            let content = safe_read(&p)?;
+            if content.is_empty() {
+                None
+            } else {
+                Some((n.to_string(), p, content))
+            }
+        })
+        .collect()
+}
+
 // ─── cli ───────────────────────────────────────────────────────────────────
 
 pub fn run(args: &[String], io: &mut Io) -> i32 {
@@ -818,12 +860,38 @@ pub fn run_with_hook_repair(
     for (name, path, content) in load_native_platform_references(ctx.platform.as_deref(), &provider) {
         parts.doc(format!("# NATIVE PLATFORM REFERENCE: {} (reference/{}.md)", name.to_uppercase(), name), &path, &content);
     }
+    for (name, path, content) in
+        load_form_factor_references(ctx.platform.as_deref(), &ctx.form_factors, &provider)
+    {
+        parts.doc(
+            format!("# NATIVE FORM FACTOR REFERENCE: {} (reference/{}.md)", name.to_uppercase(), name),
+            &path,
+            &content,
+        );
+    }
     append_image_tools_directive(&mut parts, &env);
     append_staleness_directive(&mut parts, &ctx, &options, &cwd, &env);
     if ctx.platform.is_none() {
         if let Some(raw) = extract_section_value(ctx.product.as_deref(), "Platform") {
             if !raw.is_empty() {
                 parts.push(format!("WARNING: PRODUCT.md's `## Platform` value `{}` is not recognized; treating the project as `web`. Valid values are `web`, `ios`, `android`, or `adaptive` (cross-platform, ships both). If this project is native, fix the field (name the design language the app renders, not the toolchain) and surface it to the user.", raw));
+            }
+        }
+    }
+    if let Some(raw) = extract_section_value(ctx.product.as_deref(), "Form factors") {
+        let trimmed = raw.trim();
+        if !trimmed.is_empty() {
+            if !is_native(ctx.platform.as_deref()) {
+                parts.push(format!("NOTE: PRODUCT.md has a `## Form factors` section (value `{trimmed}`), but the platform is not native; form factors apply to native products and are ignored here. Remove the section on web products or fix `## Platform` if this project is actually native.",));
+            } else {
+                let unknown: Vec<&str> = trimmed
+                    .split(|c: char| c.is_whitespace() || c == ',' || c == '+' || c == '&' || c == '/')
+                    .filter(|t| !t.is_empty() && t.to_lowercase() != "and")
+                    .filter(|t| !crate::context::FORM_FACTORS.contains(&t.to_lowercase().as_str()))
+                    .collect();
+                if !unknown.is_empty() {
+                    parts.push(format!("WARNING: PRODUCT.md's `## Form factors` value `{trimmed}` contains unrecognized values ({}). Valid values are `phone`, `tablet`, `watch`, or `tv`; the unrecognized ones are ignored and the recognized ones still apply. Surface this to the user.", unknown.join(", ")));
+                }
             }
         }
     }
@@ -1257,6 +1325,7 @@ mod user_scope_hook_tests {
             surface_brief_candidates: vec![],
             has_visual_implementation: false,
             platform: None,
+            form_factors: vec![],
             project_root: project.clone(),
             repo_root: project.clone(),
             is_monorepo: false,
@@ -1369,5 +1438,91 @@ mod wiring_fallback_tests {
         let output = parts.render();
         assert!(output.contains("MANUAL_DETECTOR_REQUIRED"));
         assert!(!output.contains("repair with impeccable hooks on"));
+    }
+}
+
+#[cfg(test)]
+mod form_factor_reference_tests {
+    use super::load_form_factor_references;
+    use crate::provider::Provider;
+    use std::path::PathBuf;
+
+    fn provider_with_skill_dir(dir: &std::path::Path) -> Provider {
+        Provider {
+            id: "test".to_string(),
+            command_prefix: "/".to_string(),
+            command: "/impeccable".to_string(),
+            skill_dir: Some(dir.to_string_lossy().into_owned()),
+            self_cmd: "impeccable".to_string(),
+            self_raw: "impeccable".to_string(),
+        }
+    }
+
+    fn fixture_skill_dir(tag: &str, refs: &[&str]) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "impeccable-ff-refs-{}-{}-{}",
+            tag,
+            std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()
+        ));
+        std::fs::create_dir_all(dir.join("reference")).unwrap();
+        for name in refs {
+            std::fs::write(dir.join("reference").join(format!("{name}.md")), format!("# {name}\n")).unwrap();
+        }
+        dir
+    }
+
+    fn names(loaded: &[(String, String, String)]) -> Vec<&str> {
+        loaded.iter().map(|(n, _, _)| n.as_str()).collect()
+    }
+
+    #[test]
+    fn watch_and_tv_load_the_size_model_and_both_device_references() {
+        let dir = fixture_skill_dir("watch-tv", &["form-factors", "watch", "tv"]);
+        let provider = provider_with_skill_dir(&dir);
+        let factors = vec!["phone".to_string(), "watch".to_string(), "tv".to_string()];
+        let loaded = load_form_factor_references(Some("ios"), &factors, &provider);
+        assert_eq!(names(&loaded), ["form-factors", "watch", "tv"]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_native_default_loads_only_the_size_model() {
+        let dir = fixture_skill_dir("default", &["form-factors", "watch", "tv"]);
+        let provider = provider_with_skill_dir(&dir);
+        let factors = vec!["phone".to_string(), "tablet".to_string()];
+        let loaded = load_form_factor_references(Some("android"), &factors, &provider);
+        assert_eq!(names(&loaded), ["form-factors"]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn phone_only_loads_nothing_web_loads_nothing() {
+        let dir = fixture_skill_dir("none", &["form-factors", "watch", "tv"]);
+        let provider = provider_with_skill_dir(&dir);
+        assert!(load_form_factor_references(Some("ios"), &["phone".to_string()], &provider).is_empty());
+        assert!(load_form_factor_references(Some("web"), &["watch".to_string(), "tv".to_string()], &provider).is_empty());
+        assert!(load_form_factor_references(None, &["watch".to_string()], &provider).is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_single_watch_or_tv_class_loads_its_device_reference_without_the_size_model() {
+        let dir = fixture_skill_dir("single", &["form-factors", "watch", "tv"]);
+        let provider = provider_with_skill_dir(&dir);
+        let loaded = load_form_factor_references(Some("adaptive"), &["watch".to_string()], &provider);
+        assert_eq!(names(&loaded), ["watch"]);
+        let loaded = load_form_factor_references(Some("adaptive"), &["tv".to_string()], &provider);
+        assert_eq!(names(&loaded), ["tv"]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn missing_reference_files_are_skipped_silently() {
+        let dir = fixture_skill_dir("empty", &[]);
+        let provider = provider_with_skill_dir(&dir);
+        let factors = vec!["watch".to_string(), "tv".to_string()];
+        assert!(load_form_factor_references(Some("ios"), &factors, &provider).is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
