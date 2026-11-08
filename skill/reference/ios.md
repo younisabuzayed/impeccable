@@ -1,6 +1,6 @@
 # iOS platform
 
-For native iOS / iPadOS apps: SwiftUI, UIKit, React Native, Expo, Flutter shipping to Apple hardware.
+For native iOS / iPadOS apps: SwiftUI, UIKit, React Native, Expo, or Flutter shipping to Apple hardware; the Stack names which one, and its framework reference ([swiftui.md](swiftui.md), [uikit.md](uikit.md), [react-native.md](react-native.md), [flutter.md](flutter.md)) carries the implementation idiom.
 
 On native, the visitor mode narrows what expression may override. HIG conformance governs structure, navigation, and interaction in every mode; brand expresses through the layer the platform leaves open (tint, type, motion, content).
 

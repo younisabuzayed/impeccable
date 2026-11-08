@@ -1,6 +1,6 @@
 # Android platform
 
-For native Android apps: Jetpack Compose, Android Views, React Native, Expo, Flutter shipping to Android hardware.
+For native Android apps: Jetpack Compose, Android Views, React Native, Expo, or Flutter shipping to Android hardware; the Stack names which one, and its framework reference ([compose.md](compose.md), [android-views.md](android-views.md), [react-native.md](react-native.md), [flutter.md](flutter.md)) carries the implementation idiom.
 
 On native, the visitor mode narrows what expression may override. Material Design 3 governs structure, navigation, and interaction in every mode; brand expresses through Material's theming (color roles, type scale, shape, motion). A Material-everywhere cross-platform app that also ships to iPhone still owes iOS its OS guarantees on that hardware: safe-area insets, Reduce Motion, edge-swipe back.
 

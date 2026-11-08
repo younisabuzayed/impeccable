@@ -27,6 +27,7 @@ Inter for everything. Purple-to-blue gradients. Cards nested in cards, gray text
 - **Words for what you want.** "Make it pop" leaves your agent to guess. `/impeccable bolder the pricing cards` loads a playbook written for that one move and points it at one target.
 - **A reviewer.** `critique` scores the design against usability heuristics and ranks what to fix first. `audit` checks accessibility, performance, theming, and responsive behavior, with findings ranked P0 (blocking) to P3 (polish).
 - **A slop detector.** 62 deterministic rules flag the tells above, plus quality problems like cramped padding and skipped headings. No LLM, no API key.
+- **Native screens on every form factor.** The same commands work on native iOS and Android, built with SwiftUI, UIKit, Jetpack Compose, Android Views, React Native, or Flutter, shipped to phones, tablets, watches, and TVs. Playbooks follow HIG or Material 3 per device class, with size-class models, canonical layouts, and the focus engine and glance rules for TV and watch.
 
 Impeccable is strongest on interfaces that already exist: point it at a page or a component and iterate. It builds new pages too; see [Build something new](https://impeccable.style/docs/new-work) for how to get the most out of that harder mode. To start, pick one component:
 
@@ -36,7 +37,7 @@ Impeccable is strongest on interfaces that already exist: point it at a page or 
 
 ## How it works
 
-Run `/impeccable init` once per project. It reads your code, asks only what it can't infer (who the product is for, what it needs to do, the constraints), and writes `PRODUCT.md`. Every later command reads it. Run `/impeccable document` to capture your existing visual system in `DESIGN.md`, so changes stay on-brand. [More on context files](https://impeccable.style/docs/context).
+Run `/impeccable init` once per project. It reads your code, asks only what it can't infer (who the product is for, what it needs to do, the constraints), and writes `PRODUCT.md`. On a native product it also records the platform (iOS, Android, or both) and the shipped form factors (phone, tablet, watch, TV), so every later command follows the right device conventions. Run `/impeccable document` to capture your existing visual system in `DESIGN.md`, so changes stay on-brand. [More on context files](https://impeccable.style/docs/context).
 
 Then name a command and a target:
 
